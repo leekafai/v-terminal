@@ -3,7 +3,7 @@
     <label for="cmd">
       <div id="terminal" @keyup.space="focus">
         <div id="output">
-          <div class="output_message" v-for="msg in output" :key="msg">
+          <div class="output_message" v-for="(msg,index) in output" :key="index">
             <div class="output_skin">
               <a class="prompt" v-if="msg.prompt" v-text="`${msg.prompt}`"></a>
               <a
@@ -21,40 +21,30 @@
           <input
             type="text"
             id="cmd"
-            v-model="content"
-            @keydown.left="arrow_l"
-            @keydown.right="arrow_r"
-            @keyup.up="arrow_u"
-            @keyup.down="arrow_d"
-            @keydown.delete="editvis"
+            v-model="input_text"
+            @keydown.left.prevent.stop="arrow_l"
+            @keydown.right.prevent.stop="arrow_r"
+            @keyup.up.prevent.stop="arrow_u"
+            @keyup.down.prevent.stop="arrow_d"
+            @keydown.delete="deleteEvent"
             @keydown.esc="blur"
             @keyup="keypress"
             @keypress.enter="submit"
             @blur="active=0"
             v-bind:disabled="!input_enable"
-            v-focus
           />
           <span class="prompt" ref="prompt">USER&nbsp;</span>
-          <div id="vo" v-bind:class="active?'active':''" v-if="content_n">
-            <div
-              v-for="item in content_n"
-              style="letter-spacing: 2px;overflow:hidden;"
-              :key="item"
-            >{{item}}</div>
+          <!-- <div id="vo" v-bind:class="active?'active':''" v-if="content_n"> -->
+          <div style="width:100%;word-break:break-all;">
+            <p id="vo" class="content active">
+              <strong>{{input_render_text[0]||''}}</strong>
+              <strong v-bind:class="input_enable?'':'error'" class="cursor" ref="cursor">
+                <b class="cursor_text" v-html="input_render_text[1]||''"></b>
+              </strong>
+              <strong>{{input_render_text[2]||''}}</strong>
+            </p>
           </div>
-          <span
-            class="content"
-            v-bind:class="active?'active':''"
-            v-html="content_before"
-            ref="ctx1"
-          ></span>
-          <span
-            v-bind:class="input_enable?'':'error'"
-            class="cursor"
-            v-html="cursor_text"
-            ref="cursor"
-          ></span>
-          <span class="content" v-html="content_after" ref="ctx2"></span>
+
           <div class="cleaner"></div>
         </div>
         <div class="cleaner"></div>
@@ -68,11 +58,10 @@ export default {
     return {
       cmdDOM: null,
       active: 0,
-      pos: null,
-      content: "",
-      content_after: "",
-      cursor_text: "",
-      content_before: "",
+      // pos: null,
+      history_pointer: 0,
+      input_text: "",
+      input_render_text: [""],
       output: [
         {
           prompt: "",
@@ -86,8 +75,26 @@ export default {
       content_n: []
     };
   },
+  computed: {
+    pos: {
+      get() {
+        return this.doGetCaretPosition(this.cmdDOM);
+      },
+      set(val) {
+        console.log("new pos", val);
+        const nowPos = this.doGetCaretPosition(this.cmdDOM);
+        console.log(nowPos, "nowPos");
+        this.cmdDOM.setSelectionRange(val, val);
+      }
+    }
+  },
   watch: {
-    content: {
+    output: {
+      handler() {
+        this.historyStep = 0;
+      }
+    },
+    input_text: {
       handler() {
         console.log(this.doGetCaretPosition(this.cmdDOM));
       }
@@ -95,58 +102,108 @@ export default {
   },
   methods: {
     arrow_l: function() {
-      console.log("arrow_left");
-      var cursor_l = this.content.length;
-      // this.pos = this.cmdDOM.caret();
-      this.pos = this.doGetCaretPosition(this.cmdDOM);
-      this.editvis();
+      console.log("arrow_left", this.doGetCaretPosition(this.cmdDOM));
+      const pos = Math.max(this.doGetCaretPosition(this.cmdDOM) - 1, 0);
+      console.log(pos, "pos left");
+      this.pos = pos;
+      this.inputRender();
     },
     arrow_r: function() {
-      console.log("arrow_right");
-      var cursor_l = this.content.length;
-      // this.pos = this.cmdDOM.caret();
-      this.pos = this.doGetCaretPosition(this.cmdDOM);
-      // console.log(this.pos + "/" + cursor_l)
-      this.editvis();
-      // console.log(this.content_before)
-      // console.log("|")
-      // console.log(this.content_after)
+      console.log("arrow_left", this.doGetCaretPosition(this.cmdDOM));
+      const pos = Math.max(this.doGetCaretPosition(this.cmdDOM) + 1, 0);
+      console.log(pos, "pos left");
+      this.pos = pos;
+      this.inputRender();
     },
-    arrow_u: function(event) {
-      var step = ++this.historyStep;
-      console.log(step + ":" + this.history.length);
-      if (this.history.length > 0) {
-        if (this.history.length >= step) {
-          this.content = this.history[this.history.length - step];
-          this.pos = this.content.length;
-          this.editvis();
+    deleteEvent() {
+      this.inputRender();
+    },
+    contentParseRender(content, cursor) {
+      // console.log(content, cursor, "content, cursor");
+      const render_text = [];
+      if (content && content.length === 0) {
+        this.content_n = [];
+        render_text.push("");
+      } else {
+        // console.log("has something", cursor, content);
+        if (cursor < content.length) {
+          // console.log(cursor, content.length);
+          // console.log(content.substr(0, cursor));
+          render_text.push(this.xss(content.substr(0, cursor)));
+          render_text.push(this.xss(content.substr(cursor, 1)));
+          render_text.push(this.xss(content.substr(cursor + 1)));
         } else {
-          // 当前向上遍历到最早的一条
-          console.warn("top now");
-          console.log(this.historyStep);
+          render_text.push(this.xss(content));
+        }
+      }
+      this.$set(this, "input_render_text", render_text);
+      // this.pos = this.input_render_text[0].length;
+      // console.log("contentParseRender", this.input_render_text);
+    },
+    inputRender(data = {}) {
+      console.log(data, "inputRender data");
+      const {
+        input = {},
+        cursor_position = this.doGetCaretPosition(this.cmdDOM)
+      } = data;
+      const { content = this.input_text } = input;
+
+      // console.log(content, "content");
+      let postion = !isNaN(cursor_position) ? cursor_position : content.length;
+      // console.log(postion, "postion", cursor_position, content.length);
+      // this.content = content;
+      // this.cmdDOM.setSelectionRange(postion, postion);
+      this.pos = postion;
+      // console.log(postion, content);
+      this.contentParseRender(content, postion);
+    },
+
+    arrow_u: function(e) {
+      console.log(e, "eeee");
+      let input_text = "";
+      if (this.history[0]) {
+        console.log(this.history_pointer, "historyStep");
+        console.log(this.history);
+        if (this.history_pointer === 0) {
+          input_text = this.history[0];
+        } else if (this.history_pointer > this.history.length - 1) {
+          this.history_pointer = 0;
+          input_text = this.history[0];
+        } else {
+          input_text = this.history[this.history_pointer];
         }
       } else {
         console.warn("no history");
       }
+      e.preventDefault();
+      e.stopPropagation();
+      console.log(input_text, "input_text");
+      this.input_text = input_text;
+      this.inputRender({
+        input: { content: input_text },
+        cursor_position: input_text.length
+      });
+
+      this.history_pointer++;
     },
-    arrow_d: function(event) {
-      var step = Math.abs(--this.historyStep);
+    arrow_d: function(e) {
+      let step = Math.abs(--this.historyStep);
       console.log(step + ":" + this.history.length);
       if (this.history.length > 0 && this.history.length - step >= 1) {
         if (this.history.length >= step) {
-          this.content = this.history[this.history.length - step];
+          this.input_text = this.history[this.history.length - step];
           console.log("~~" + this.history[this.history.length - step]);
-          this.pos = this.content.length;
-          this.editvis();
-          console.log(this.content + "//" + this.content.before);
-          console.log("1=" + this.pos);
+          // this.pos = this.input_text.length;
+          // this.editvis();
+          console.log(this.input_text + "//" + this.input_text.before);
+          // console.log("1=" + this.pos);
           // console.log("2=" + this.cmdDOM.caret());
-          console.warn(this.content.length);
+          console.warn(this.input_text.length);
 
           // console.log("3=" + this.cmdDOM.caret());
-          console.log("4=" + this.pos);
+          // console.log("4=" + this.pos);
           console.log("h:" + this.history);
-          console.log("prv" + this.content);
+          console.log("prv" + this.input_text);
         } else {
           // 当前向上遍历到最早的一条
           console.warn("top now");
@@ -155,17 +212,19 @@ export default {
         }
       } else {
         console.warn("no history");
+        e.preventDefault();
+        e.stopPropagation();
       }
     },
     format_output: function() {
       if (this.output.length > 30) {
-        var sublength = this.output.length - 30;
+        let sublength = this.output.length - 30;
         this.output.splice(0, sublength);
       }
     },
     doGetCaretPosition(oField) {
       // Initialize
-      var iCaretPos = 0;
+      let iCaretPos = 0;
 
       // IE Support
       if (document.selection) {
@@ -173,7 +232,7 @@ export default {
         oField.focus();
 
         // To get cursor position, get empty selection range
-        var oSel = document.selection.createRange();
+        let oSel = document.selection.createRange();
 
         // Move selection start to 0 position
         oSel.moveStart("character", -oField.value.length);
@@ -189,55 +248,54 @@ export default {
       // Return results
       return iCaretPos;
     },
-    historySelect: function() {
-      // var step = ++this.historyStep
-      // prev = function () {
-      //     return this.history[this.history.length - step - 1]
-      // }
-      // return prev
-      // console.log('prv' + prev)
-    },
-
     submit: function() {
-      if (this.commend(this.content)) {
+      if (this.commend(this.input_text)) {
         console.warn("commend");
       } else {
-        if (this.content) {
-          var message = { prompt: "USER", content: this.xss(this.content) };
+        if (this.input_text) {
+          let message = { prompt: "USER", content: this.xss(this.input_text) };
           this.output.push(message);
           this.format_output();
           this.historySet(message);
         }
       }
       console.log(this.output);
-      this.content = "";
       this.content_n.length = 0;
-      this.editvis();
+      this.input_text = "";
+      this.inputRender({
+        input: { content: "" },
+        cursor_position: 0
+      });
     },
-    keypress: function() {
-      console.log("keypress");
-      var cursor_l = 0;
+    keypress(e) {
+      // console.log("keypress");
+      // let cursor_l = 0;
       // this.pos = this.cmdDOM.caret();
-      this.pos = this.doGetCaretPosition(this.cmdDOM);
-      if (this.content) {
-        cursor_l = this.content.length;
+      // this.pos = this.doGetCaretPosition(this.cmdDOM);
+      // if (this.input_text) {
+      //   cursor_l = this.input_text.length;
+      // }
+      console.log(e.code);
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "Enter"].includes(e.code)) {
+        this.inputRender({ input: { content: this.input_text } });
       }
-      this.editvis();
-
-      console.log(this.pos + "/" + cursor_l);
-      console.log(this.content_before);
-      console.log(this.cursor_text);
-      console.log(this.content_after);
+      // console.log(this.pos + "/" + cursor_l);
+      // console.log("content_before", this.content_before);
+      // console.log("cursor_text", this.cursor_text);
+      // console.log("content_after", this.content_after);
     },
     commend: function(str) {
-      var allow = 0;
+      let allow = 0;
       if (!str) {
         return 0;
       }
       switch (str) {
         case "help":
           allow = 1;
-          this.output.push({ prompt: "HELP", content: "commend:help,clean,github" });
+          this.output.push({
+            prompt: "HELP",
+            content: "commend:help,clean,github"
+          });
           break;
         case "clean":
           allow = 1;
@@ -253,58 +311,6 @@ export default {
       }
       return allow;
     },
-    editvis: function() {
-      console.log(this.pos);
-      var count = 0;
-      var linelim = 20;
-      // const a = this.$refs.commend.offsetWidth;
-      // const b = this.$refs.prompt.offsetWidth;
-      // c = this.$refs.ctx1.offsetWidth;
-      // d = this.$refs.cursor.offsetWidth;
-      // e = this.$refs.ctx2.offsetWidth;
-      if (this.content_n.length > 0) {
-        // 换行后
-        if (this.content_before.length > linelim) {
-          // 没有空间了
-          this.content_n.push(this.content_before);
-          this.content_before = "";
-        }
-        this.content_n.map(function(str) {
-          const num = str.length;
-          count += num;
-        });
-        if (this.pos == this.content.length) {
-          this.content_after = "";
-          this.cursor_text = "";
-          this.content_before = this.xss(this.content.substr(count));
-        } else {
-          // pos<cursor_l
-          this.content_after = this.xss(this.content.substr(this.pos + 1));
-          this.cursor_text = this.xss(this.content.substr(this.pos, 1));
-          this.content_before = this.xss(
-            this.content.substr(count, this.pos - count)
-          );
-        }
-      } else {
-        // 未换行
-
-        if (this.pos == this.content.length) {
-          this.content_after = "";
-          this.cursor_text = "";
-          this.content_before = this.xss(this.content);
-        } else {
-          // pos<cursor_l
-          this.content_after = this.xss(this.content.substr(this.pos + 1));
-          this.cursor_text = this.xss(this.content.substr(this.pos, 1));
-          this.content_before = this.xss(this.content.substr(0, this.pos));
-        }
-        if (this.content.length > linelim) {
-          // 没有空间了
-          this.content_n.push(this.content_before);
-          this.content_before = "";
-        }
-      }
-    },
     xss: function(str) {
       str = str.replace(/</g, "&lt;");
       str = str.replace(/>/g, "&gt;");
@@ -313,12 +319,12 @@ export default {
     },
     historySet: function(message) {
       this.history.push(message.content);
-      this.historyStep = this.history.length;
+      this.history_pointer = this.history.length - 1 || 0;
     },
     blur: function() {
       this.cmdDOM.blur();
     },
-    focus: function(message, event) {
+    focus: function() {
       this.cmdDOM.focus();
     }
   },
@@ -326,12 +332,21 @@ export default {
     this.$nextTick(() => {
       this.cmdDOM = document.querySelector("#cmd");
       // this.pos = this.cmdDOM.caret();
-      this.pos = this.doGetCaretPosition(this.cmdDOM);
+      // this.pos = this.doGetCaretPosition(this.cmdDOM);
     });
   }
 };
 </script>
+<style lang="scss">
+@import "@/scss/index.scss";
+body {
+  margin: 0;
+  background: $black;
+  font-family: "Consolas", Helvetica, Arial, sans-serif, monospace, "Segoe UI";
+}
+</style>
 <style lang="scss" scoped>
+@import "@/scss/index.scss";
 input[type="text"] {
   opacity: 0;
   position: absolute;
@@ -339,47 +354,69 @@ input[type="text"] {
   padding: 0;
   margin: 0;
 }
-body {
-  margin: 0;
-  background: rgba(37, 37, 37, 0.85);
-  font-family: "Consolas", Helvetica, Arial, sans-serif, monospace, "Segoe UI";
-}
+// input[type="text"] {
+//   opacity: 1;
+//   position: absolute;
+//   width: 100px;
+//   padding: 0;
+//   margin: 0;
+// }
 #commend {
   width: 100%;
   float: left;
   line-height: 30px;
   min-height: 30px;
-  display: block;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
   & #vo {
-    width: 100%;
-  }
-  & span {
-    float: left;
-    &.content {
-      //  overflow: hidden;
-      letter-spacing: 2px;
+    margin: 0;
+    padding-left:10px;
+    strong{
+      font-weight: 100;
     }
     &.active {
-      & ~ .error {
+      & > .error {
         content: "...";
         background: #a71d5d !important;
       }
-      & ~ .cursor {
-        min-width: 4px;
-        height: 20px;
+      & > .cursor {
+        min-width: 12px;
+        padding: 0 1px;
+        height: 30px;
         position: relative;
-        background: #969896;
-        color: #002b36;
-        box-shadow: 0 0 5px #93a1a1;
-        text-align: center;
-        word-spacing: 3px;
-        animation: cursor 0.9s infinite linear;
-        line-height: 20px;
-        margin: 5px 2px;
-        display: block;
+        line-height: 30px;
+        flex-direction: column;
+        justify-content: center;
+        & .cursor_text {
+          min-width: 1px;
+          font-weight: 300;
+          background: #969896;
+          color: #002b36;
+          box-shadow: 0 0 5px #93a1a1;
+          text-align: center;
+          word-spacing: 3px;
+          animation: cursor 0.9s infinite linear;
+          height: 20px;
+          line-height: 20px;
+          padding: 0 2px;
+        }
       }
     }
+  }
+  & span {
+    // float: left;
+    height: 30px;
+    &.content {
+      //  overflow: hidden;
+      letter-spacing: 2px;
+      min-width: 1px;
+    }
+
     &.prompt {
+      display: flex;
+      justify-content: flex-start;
+      flex-direction: row;
       &:after {
         content: ">";
         color: tomato;
@@ -403,14 +440,14 @@ body {
 
 .output_skin {
   position: relative;
-  .prompt,
-  .content {
-    float: left;
-  }
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
   .prompt {
-    margin: 0 3px;
+    margin-right: 1rem;
+    color: $black6;
     &:after {
-      content: "$";
+      content: ">";
     }
   }
   .content {
@@ -418,7 +455,7 @@ body {
     letter-spacing: 2px;
     display: block;
     animation: return 0.3s;
-
+    word-break: break-all;
     // animation: insertani 2s steps(100, end);
   }
 }

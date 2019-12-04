@@ -1,48 +1,29 @@
 {
-  "name": "v-terminal",
-  "version": "0.1.2",
+  "name": "vterminal",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "node ./script/makeVerFile.js && vue-cli-service serve",
-    "build": "node ./script/makeVerFile.js && vue-cli-service build"
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "axios": "^0.19.0",
-    "browser-image-compression": "^1.0.6",
-    "copy-to-clipboard": "^3.2.0",
-    "core-js": "^2.6.5",
-    "crypto-js": "^3.1.9-1",
-    "css-element-queries": "^1.2.1",
-    "date-fns": "^2.6.0",
-    "element-ui": "^2.12.0",
-    "ismobilejs": "^1.0.3",
-    "jszip": "^3.2.2",
-    "qrcode": "^1.4.2",
-    "remixicon": "^2.1.0",
-    "simple-web-worker": "^1.2.0",
-    "vconsole": "^3.3.4",
+    "core-js": "^3.4.3",
     "vue": "^2.6.10",
-    "vue-count-to": "^1.0.13",
-    "vue-router": "^3.0.3",
-    "vuex": "^3.0.1"
+    "vue-router": "^3.1.3",
+    "vuex": "^3.1.2"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.11.0",
-    "@vue/cli-service": "^3.11.0",
-    "babel-plugin-component": "^1.1.1",
-    "babel-plugin-transform-remove-console": "^6.9.4",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-runtime": "^6.26.0",
-    "eslint": "^6.5.1",
-    "eslint-plugin-vue": "^5.2.3",
-    "purgecss-webpack-plugin": "^1.6.0",
-    "raw-loader": "^3.1.0",
-    "sass": "^1.23.0",
-    "sass-loader": "^7.1.0",
-    "uglifyjs-webpack-plugin": "^2.2.0",
-    "vue-template-compiler": "^2.6.10",
-    "worker-loader": "^2.0.0"
+    "@vue/cli-plugin-babel": "^4.1.0",
+    "@vue/cli-plugin-eslint": "^4.1.0",
+    "@vue/cli-plugin-router": "^4.1.0",
+    "@vue/cli-plugin-vuex": "^4.1.0",
+    "@vue/cli-service": "^4.1.0",
+    "babel-eslint": "^10.0.3",
+    "eslint": "^5.16.0",
+    "eslint-plugin-vue": "^5.0.0",
+    "sass": "^1.23.7",
+    "sass-loader": "^8.0.0",
+    "vue-template-compiler": "^2.6.10"
   }
 }

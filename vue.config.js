@@ -2,9 +2,6 @@ console.log(process.env.NODE_ENV, 'env', process.env.NODE_ENV === 'development' 
 module.exports = {
   productionSourceMap: false,
   configureWebpack: {
-    externals: {
-      'vue': 'Vue'
-    },
     module: {
       rules: [
           {
