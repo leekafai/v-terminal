@@ -1,0 +1,69 @@
+@import "../theme/index.css";
+@import "./color.scss";
+.el-dialog, .el-pager li{
+  border:1px solid $black3;
+  background:$black;
+  .el-dialog__title{
+    color:$white;
+  }
+}
+.el-input__inner{
+  background:$black;
+  color:$white;
+  border:1px solid $black3;
+  &:focus,&:hover,&:active{
+    border-color: $black9;
+  }
+}
+.el-message-box {
+  // border-radius: 0 !important;
+  background: $black;
+  border-color: $black2;
+  border-width: 1px;
+  .el-message-box__title {
+    color: $black9;
+  }
+  .el-message-box__content {
+    color: $black9;
+  }
+  .el-message-box__close {
+    &:hover,
+    &:focus {
+      color: $black9;
+    }
+  }
+}
+.el-button--primary {
+  border-color: transparent;
+  background: $black3;
+  color: $black9;
+  &:hover,
+  &:focus {
+    border-color: transparent;
+    background: $black6;
+    color: $black;
+  }
+}
+
+// .el-button {
+//   border-radius: 0 !important;
+// }
+.el-slider {
+  * {
+    cursor: e-resize !important;
+    border-radius: 4px;
+  }
+  .el-slider__bar {
+    background: $black5;
+  }
+  .el-slider__button {
+    border-color: $black5;
+    background: $black5;
+  }
+  .el-slider__runway {
+    background: $black4;
+  }
+}
+.el-tooltip__popper {
+  // border-radius: 0;
+}

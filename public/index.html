@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="white" />
+  <meta name="format-detection" content="telphone=no, email=no" />
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+  <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+  <title>v-terminal</title>
+
+  <script>
+    var rAF = function () {
+      return (
+        window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        function (callback) {
+          window.setTimeout(callback, 1000 / 60);
+        }
+      );
+    }();
+
+    var frame = 0;
+    var allFrameCount = 0;
+    var lastTime = Date.now();
+    var lastFameTime = Date.now();
+
+    var loop = function () {
+      var now = Date.now();
+      var fs = (now - lastFameTime);
+      var fps = Math.round(1000 / fs);
+
+      lastFameTime = now;
+      // 不置 0，在动画的开头及结尾记录此值的差值算出 FPS
+      allFrameCount++;
+      frame++;
+
+      if (now > 1000 + lastTime) {
+        var fps = Math.round((frame * 1000) / (now - lastTime));
+        console.log(`${new Date()} 1S内 FPS：`, fps);
+        frame = 0;
+        lastTime = now;
+      };
+
+      rAF(loop);
+    }
+
+    // loop();
+  </script>
+</head>
+<style>
+  body {
+    background: rgba(8, 8, 8, 1);
+    color: white;
+    font-family: Consolas, Monaco, monospace;
+  }
+</style>
+
+<body>
+  <noscript>
+    <strong>所以需要你使用默认模式的新版浏览器访问。</strong>
+  </noscript>
+  <div id="app">
+
+  </div>
+  <!-- built files will be auto injected -->
+</body>
+
+</html>
