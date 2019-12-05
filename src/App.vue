@@ -301,6 +301,12 @@ export default {
           allow = 1;
           this.output.length = 0;
           break;
+        case "reboot":
+          allow = 1;
+          this.output.length = 0;
+          this.history.length = 0;
+          this.history_pointer = 0;
+          break;
         case "github":
           allow = 1;
           this.output.push({
@@ -371,8 +377,8 @@ input[type="text"] {
   justify-content: flex-start;
   & #vo {
     margin: 0;
-    padding-left:10px;
-    strong{
+    padding-left: 10px;
+    strong {
       font-weight: 100;
     }
     &.active {
